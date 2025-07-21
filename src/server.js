@@ -69,8 +69,8 @@ const init = async() => {
     const recipientDonationsService = new RecipientDonationsService();
 
     const server = Hapi.server({
-        port: process.env.PORT,
-        host: process.env.HOST,
+        port: process.env.PORT || 3000,
+        host: process.env.HOST || 'localhost',
     });
 
     await server.register([
