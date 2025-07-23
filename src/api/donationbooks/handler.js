@@ -35,7 +35,7 @@ class DonationBooksHandler {
 
       await this._coverPathDonationsService.addCoverPath(
         bookId,
-        `/uploads/donationCovers/${filename}`
+        `http://${process.env.HOST}:${process.env.PORT}/donation/cover/${filename}`
       );
     }
 

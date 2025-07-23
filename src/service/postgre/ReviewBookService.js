@@ -28,16 +28,19 @@ class ReviewBookService{
         const offset =  (page - 1) * limit
         let query = `
             SELECT 
+                review_books.id,
                 review_books.title, 
                 review_books.author, 
                 review_books.publisher, 
                 review_books.publish_year, 
                 review_books.synopsis, 
                 review_books.genre,
-                cover_url_reviews.url
-            FROM review_books LEFT JOIN
-                cover_url_reviews ON review_book_id = review_books.id`
-
+                cover_url_reviews.url,
+                users.username
+            FROM review_books 
+            LEFT JOIN cover_url_reviews ON review_book_id = review_books.id
+            LEFT JOIN users ON review_books.owner = users.id
+            `
         const values = [];
         let paramIndex = 1;
 
@@ -74,9 +77,11 @@ class ReviewBookService{
                 review_books.publish_year,
                 review_books.synopsis,
                 review_books.genre,
-                cover_url_reviews.url AS cover_url
+                cover_url_reviews.url AS cover_url,
+                users.username
             FROM review_books
             LEFT JOIN cover_url_reviews ON review_books.id = cover_url_reviews.review_book_id
+            LEFT JOIN users ON review_books.owner = users.id
             WHERE review_books.id = $1
             `,
             values: [id]

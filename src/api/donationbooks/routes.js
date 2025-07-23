@@ -1,3 +1,5 @@
+const path = require('path');
+
 const routes = (handler) => [
   {
     method: 'POST',
@@ -13,6 +15,15 @@ const routes = (handler) => [
         maxBytes: 512 * 1024, //TODO: Limitnya berapa?
       },
     },
+  },
+  {
+    method: 'GET',
+    path: '/donation/cover/{param*}',
+    handler: {
+      directory: {
+        path: path.resolve(__dirname, 'donationbookimage/donationCovers'),
+      }
+    }
   },
   {
     method: 'GET',
