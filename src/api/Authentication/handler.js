@@ -26,6 +26,7 @@ class AuthenticationsHandler {
             status: 'success',
             message: "Login Berhasil",
             data: {
+                userId: id,
                 accessToken,
                 refreshToken
             }

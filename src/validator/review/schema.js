@@ -7,7 +7,8 @@ const reviewSchema = Joi.object({
     publish_year: Joi.number(),
     synopsis: Joi.string(),
     genre: Joi.array().items(Joi.string()),
-    rating: Joi.number()
+    rating: Joi.number(),
+    description: Joi.string().required()
 });
 
 module.exports = { reviewSchema };
