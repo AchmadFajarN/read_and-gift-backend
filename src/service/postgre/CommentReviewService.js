@@ -54,12 +54,14 @@ class CommentReviewService {
     }
 
     async deleteComment(reviewId, userId) {
+        console.log(reviewId, userId)
         const query = {
             text: 'DELETE FROM comments_review WHERE user_id = $1 AND review_id = $2',
             values: [userId, reviewId]
         }
 
         const result = await this._pool.query(query);
+        console.log(result)
 
         if (!result.rowCount) {
             throw new NotFoundError('komentar tidak ditemukan atau bukan milik anda')
@@ -73,7 +75,7 @@ class CommentReviewService {
         }
 
         const result = await this._pool.query(query);
-
+        console.log(result.rows)
         if (!result.rows.length) {
             throw new NotFoundError('komentar tidak ditemukan');
         }

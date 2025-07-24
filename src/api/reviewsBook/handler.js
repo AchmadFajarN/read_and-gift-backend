@@ -11,7 +11,6 @@ class ReviewHandler {
     async postReview(req, h) {
         try {
             const { id:owner } = req.auth.credentials;
-            console.log(owner)
             const { title, author, publisher, publish_year, synopsis, genre, rating, description } = req.payload;
             this._validator.validatePayloadReview(req.payload);
 

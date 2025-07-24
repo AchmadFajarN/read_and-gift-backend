@@ -1,3 +1,5 @@
+const InvariantError = require('../../exeption/InvariantError');
+
 class AuthenticationsHandler {
     constructor(authenticationService, userService, tokenManager, validator) {
         this._authenticationService = authenticationService;
@@ -28,18 +30,25 @@ class AuthenticationsHandler {
             data: {
                 userId: id,
                 accessToken,
-                refreshToken
             }
-        })
+        }).state('refreshToken', refreshToken, {
+            httpOnly: true,
+            secure: false,
+            path: '/',
+            sameSite: 'Lax',
+            ttl: 7 * 24 * 60 * 60 * 1000 // 7 days
+        });
 
         response.code(201);
         return response;
     }
 
     async putAuthLogin(req, h) {
-        this._validator.validatePutAuthenticationPayload(req.payload);
+        const { refreshToken } = req.state;
+        if (!refreshToken) {
+            throw new InvariantError('Refresh token tidak ditemukan');
+        }
 
-        const { refreshToken } = req.payload;
         await this._authenticationService.verifyRefreshToken(refreshToken);
         const { id, role } = this._tokenManager.verifyRefreshToken(refreshToken);
 
@@ -54,16 +63,20 @@ class AuthenticationsHandler {
     }
 
     async deleteAuthLogin(req, h) {
-        this._validator.validateDeleteAuthenticationPayload(req.payload);
-
-        const { refreshToken } = req.payload;
+        const { refreshToken } = req.state;
+        if (!refreshToken) {
+            throw new InvariantError('Refresh token tidak ditemukan');
+        }
         await this._authenticationService.verifyRefreshToken(refreshToken);
         await this._authenticationService.deleteRefreshToken(refreshToken);
 
-        return {
+        const response = h.response({
             status: 'success',
-            message: 'refresh token berhasil dihapus'
-        }
+            message: 'Logout berhasil'
+        });
+        response.unstate('refreshToken');
+
+        return response;
     }
 }
 

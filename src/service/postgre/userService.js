@@ -64,6 +64,7 @@ class UserService {
     async getUserById(id) {
         const query = {
             text: `SELECT 
+                      users.id,
                       users.username,
                       users.fullname,
                       image_profile_url.url

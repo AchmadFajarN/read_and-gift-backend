@@ -1,77 +1,112 @@
-const { Pool } = require('pg');
-const { nanoid } = require('nanoid');
-const  NotFoundError  = require('../../exeption/NotFoundError');
-const InvariantError = require('../../exeption/InvariantError');
-const AuthorizationError = require('../../exeption/AuthorizationError');
+const { Pool } = require("pg");
+const { nanoid } = require("nanoid");
+const NotFoundError = require("../../exeption/NotFoundError");
+const InvariantError = require("../../exeption/InvariantError");
+const AuthorizationError = require("../../exeption/AuthorizationError");
 
-class ReviewBookService{
-    constructor(likeService, commentService) {
-        this._pool = new Pool();
-        this._likeService = likeService;
-        this._commentService = commentService;
+class ReviewBookService {
+  constructor(likeService, commentService) {
+    this._pool = new Pool();
+    this._likeService = likeService;
+    this._commentService = commentService;
+  }
+
+  async addReview({
+    title,
+    author,
+    publisher,
+    publish_year,
+    synopsis,
+    genre,
+    owner,
+    rating,
+    description,
+  }) {
+    const id = `review-${nanoid(16)}`;
+    const date = new Date();
+
+    const query = {
+      text: `INSERT INTO review_books VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
+      values: [
+        id,
+        title,
+        author,
+        publisher,
+        publish_year,
+        synopsis,
+        genre,
+        date,
+        owner,
+        rating,
+        description,
+      ],
+    };
+
+    const result = await this._pool.query(query);
+    return result.rows[0].id;
+  }
+
+  async getAllReview(page = 1, limit = 9, title) {
+    const offset = (page - 1) * limit;
+    let query = `
+    SELECT 
+      review_books.id,
+      review_books.title, 
+      review_books.rating,
+      review_books.author, 
+      review_books.publisher, 
+      review_books.publish_year, 
+      review_books.synopsis, 
+      review_books.genre,
+      cover_url_reviews.url,
+      users.username
+    FROM review_books 
+    LEFT JOIN cover_url_reviews ON review_book_id = review_books.id
+    LEFT JOIN users ON review_books.owner = users.id
+  `;
+    const values = [];
+    let paramIndex = 1;
+
+    if (title) {
+      query += ` WHERE review_books.title ILIKE $${paramIndex}`;
+      values.push(`%${title}%`);
+      paramIndex++;
     }
 
-    async addReview({ title, author, publisher, publish_year, synopsis, genre, owner, rating, description }) {
-        const id = `review-${nanoid(16)}`
-        const date = new Date();
+    query += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+    values.push(limit, offset);
 
-        const query = {
-            text: `INSERT INTO review_books VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id`,
-            values: [id, title, author, publisher, publish_year, synopsis, genre, date, owner, rating, description]
-        }
-        
-        const result = await this._pool.query(query);
-        return result.rows[0].id
+    const result = await this._pool.query({ text: query, values });
+
+    if (title && !result.rows.length) {
+      throw new NotFoundError(`judul buku ${title} tidak ditemukan`);
     }
 
-    async getAllReview(page = 1, limit = 9, title) {
-        const offset =  (page - 1) * limit
-        let query = `
-            SELECT 
-                review_books.id,
-                review_books.title, 
-                review_books.rating,
-                review_books.author, 
-                review_books.publisher, 
-                review_books.publish_year, 
-                review_books.synopsis, 
-                review_books.genre,
-                cover_url_reviews.url,
-                users.username
-            FROM review_books 
-            LEFT JOIN cover_url_reviews ON review_book_id = review_books.id
-            LEFT JOIN users ON review_books.owner = users.id
-            `
-        const values = [];
-        let paramIndex = 1;
+    const reviews = result.rows;
 
-        if (title) {
-            query += ` WHERE review_books.title ILIKE $${paramIndex}`;
-            values.push(`%${title}%`);
-            paramIndex++
-        }
+    // Tambahkan likes dan comments untuk setiap review
+    const reviewsWithExtras = await Promise.all(
+      reviews.map(async (review) => {
+        const likes = await this._likeService.getLikesByReviewId(review.id);
+        const comments = await this._commentService.getComment(review.id);
 
-        query += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
-        values.push(limit, offset);
+        return {
+          ...review,
+          likes: likes.length,
+          comments: comments.length, 
+        };
+      })
+    );
 
-        const queryPool = {
-            text: query,
-            values
-        }
+    return reviewsWithExtras;
+  }
 
-        const result = await this._pool.query(queryPool);
-    
-        if (title && !result.rows.length) {
-            throw new NotFoundError(`judul buku ${title} tidak ditemukan`)
-        }
-        return result.rows
-    }
-
-    async getReviewById(id) {
-        const query = {
-            text: `
+  async getReviewById(id) {
+    const query = {
+      text: `
             SELECT
                 review_books.id,
+                review_books.owner,
                 review_books.title,
                 review_books.author,
                 review_books.publisher,
@@ -87,42 +122,41 @@ class ReviewBookService{
             LEFT JOIN users ON review_books.owner = users.id
             WHERE review_books.id = $1
             `,
-            values: [id]
-        }
+      values: [id],
+    };
 
-        const result = await this._pool.query(query);
-        
+    const result = await this._pool.query(query);
 
-        if (!result.rows.length) {
-            throw new NotFoundError('buku tidak ditemukan')
-        }
-
-        const detail = result.rows[0]
-
-        const likes = await this._likeService.getLikesByReviewId(id);
-        const comments = await this._commentService.getComment(id);
-
-        return {
-            ...detail,
-            likes: likes.length,
-            comments
-        };
+    if (!result.rows.length) {
+      throw new NotFoundError("buku tidak ditemukan");
     }
 
-    async getReviewByUserId(userId) {
-        const query = {
-            text: 'SELECT * FROM review_books WHERE owner = $1',
-            values: [userId]
-        }
+    const detail = result.rows[0];
 
-        const result = await this._pool.query(query);
-        
-        return result.rows;
-    }
+    const likes = await this._likeService.getLikesByReviewId(id);
+    const comments = await this._commentService.getComment(id);
 
-    async getReviewByTitle(title) {
-        const query = {
-            text: `
+    return {
+      ...detail,
+      likes: likes.length,
+      comments,
+    };
+  }
+
+  async getReviewByUserId(userId) {
+    const query = {
+      text: "SELECT * FROM review_books WHERE owner = $1",
+      values: [userId],
+    };
+
+    const result = await this._pool.query(query);
+
+    return result.rows;
+  }
+
+  async getReviewByTitle(title) {
+    const query = {
+      text: `
             SELECT 
                 review_books.title, 
                 review_books.author, 
@@ -134,21 +168,24 @@ class ReviewBookService{
             FROM review_books LEFT JOIN
                 cover_url_reviews ON review_book_id = review_books.id
             WHERE review_books.title LIKE $1`,
-            values: [`%${title}%`]
-        }
+      values: [`%${title}%`],
+    };
 
-        const result = await this._pool.query(query);
+    const result = await this._pool.query(query);
 
-        if (!result.rowCount) {
-            return []
-        }
-
-        return result.rows
+    if (!result.rowCount) {
+      return [];
     }
 
-    async editPostReview(id, { title, author, publisher, publish_year, synopsis, genre, owner, rating }) {
-        const query = {
-            text: `UPDATE review_books
+    return result.rows;
+  }
+
+  async editPostReview(
+    id,
+    { title, author, publisher, publish_year, synopsis, genre, owner, rating }
+  ) {
+    const query = {
+      text: `UPDATE review_books
             SET title = $1,
                 author = $2,
                 publisher = $3,
@@ -159,58 +196,68 @@ class ReviewBookService{
             WHERE id = $8 AND owner = $9
             RETURNING id
             `,
-            values: [title, author, publisher, publish_year, synopsis, genre, rating, id, owner]
-        }
+      values: [
+        title,
+        author,
+        publisher,
+        publish_year,
+        synopsis,
+        genre,
+        rating,
+        id,
+        owner,
+      ],
+    };
 
-        const result = await this._pool.query(query);
+    const result = await this._pool.query(query);
 
-        if (!result.rows.length) {
-            throw new InvariantError('Gagal memperbarui');
-        }
+    if (!result.rows.length) {
+      throw new InvariantError("Gagal memperbarui");
+    }
+  }
+
+  async deleteReview(id) {
+    const query = {
+      text: "DELETE FROM review_books WHERE id = $1 RETURNING id",
+      values: [id],
+    };
+
+    const result = await this._pool.query(query);
+
+    if (!result.rows.length) {
+      throw new NotFoundError("review tidak ditemukan");
+    }
+  }
+
+  async validateReviewOwner(reviewId, ownerId, role) {
+    const query = {
+      text: "SELECT owner FROM review_books WHERE id = $1",
+      values: [reviewId],
+    };
+
+    const result = await this._pool.query(query);
+
+    if (!result.rows.length) {
+      throw new NotFoundError("review tidak ditemukan");
     }
 
-    async deleteReview(id) {
-        const query = {
-            text: 'DELETE FROM review_books WHERE id = $1 RETURNING id',
-            values: [id]
-        }
-
-        const result = await this._pool.query(query);
-
-        if (!result.rows.length) {
-            throw new NotFoundError('review tidak ditemukan')
-        }
+    if (result.rows[0].owner !== ownerId && role !== "admin") {
+      throw new AuthorizationError("anda tidak berhak mengakses resource ini");
     }
+  }
 
-    async validateReviewOwner(reviewId, ownerId, role) {
-        const query = {
-            text: 'SELECT owner FROM review_books WHERE id = $1',
-            values: [reviewId]
-        }
+  async verifyReviewExist(reviewId) {
+    const query = {
+      text: "SELECT * FROM review_books WHERE  id = $1",
+      values: [reviewId],
+    };
 
-        const result = await this._pool.query(query);
+    const result = await this._pool.query(query);
 
-        if (!result.rows.length) {
-            throw new NotFoundError('review tidak ditemukan')
-        }
-
-        if (result.rows[0].owner !== ownerId && role !== 'admin') {
-            throw new AuthorizationError('anda tidak berhak mengakses resource ini')
-        }
+    if (!result.rows.length) {
+      throw new NotFoundError("review tidak ditemukan");
     }
-
-    async verifyReviewExist(reviewId) {
-        const query = {
-            text: 'SELECT * FROM review_books WHERE  id = $1',
-            values: [reviewId]
-        }
-
-        const result = await this._pool.query(query);
-
-        if (!result.rows.length) {
-            throw new NotFoundError('review tidak ditemukan')
-        }
-    }
+  }
 }
 
 module.exports = ReviewBookService;
