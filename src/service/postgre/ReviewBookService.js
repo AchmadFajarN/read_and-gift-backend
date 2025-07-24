@@ -30,6 +30,7 @@ class ReviewBookService{
             SELECT 
                 review_books.id,
                 review_books.title, 
+                review_books.rating,
                 review_books.author, 
                 review_books.publisher, 
                 review_books.publish_year, 
@@ -77,6 +78,8 @@ class ReviewBookService{
                 review_books.publish_year,
                 review_books.synopsis,
                 review_books.genre,
+                review_books.description,
+                review_books.rating,
                 cover_url_reviews.url AS cover_url,
                 users.username
             FROM review_books
