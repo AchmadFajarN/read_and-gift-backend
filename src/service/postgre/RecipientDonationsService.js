@@ -79,15 +79,18 @@ class RecipientDonations {
 async getRecipientDonations({ userId, status }) {
   const query = {
     text: `
-      SELECT recipient_donations.id,
-             recipient_donations.id_donation AS "donationBookId",
-             recipient_donations.recipient_id AS "recipientId",
-             recipient_donations.user_id AS "donorId",
-             recipient_donations.donation_status AS "donationStatus"
-      FROM recipient_donations
-      WHERE (recipient_donations.user_id = $1 OR recipient_donations.recipient_id = $1)
-      ${status ? 'AND recipient_donations.donation_status = $2' : ''}
-      ORDER BY recipient_donations.created_at DESC
+      SELECT 
+        rd.id,
+        rd.id_donation AS "donationBookId",
+        rd.recipient_id AS "recipientId",
+        ru.username AS "recipientUsername",  -- username dari recipient
+        rd.user_id AS "donorId",
+        rd.donation_status AS "donationStatus"
+      FROM recipient_donations rd
+      JOIN users ru ON ru.id = rd.recipient_id
+      WHERE (rd.user_id = $1 OR rd.recipient_id = $1)
+      ${status ? 'AND rd.donation_status = $2' : ''}
+      ORDER BY rd.created_at DESC
     `,
     values: status ? [userId, status] : [userId],
   };
@@ -96,6 +99,7 @@ async getRecipientDonations({ userId, status }) {
 
   return result.rows;
 }
+
 
 
 }

@@ -145,7 +145,23 @@ class ReviewBookService {
 
   async getReviewByUserId(userId) {
     const query = {
-      text: "SELECT * FROM review_books WHERE owner = $1",
+      text: `SELECT
+                review_books.id,
+                review_books.owner,
+                review_books.title,
+                review_books.author,
+                review_books.publisher,
+                review_books.publish_year,
+                review_books.synopsis,
+                review_books.genre,
+                review_books.description,
+                review_books.rating,
+                cover_url_reviews.url AS cover_url,
+                users.username
+            FROM review_books
+            LEFT JOIN cover_url_reviews ON review_books.id = cover_url_reviews.review_book_id
+            LEFT JOIN users ON review_books.owner = users.id
+            WHERE review_books.owner = $1`,
       values: [userId],
     };
 
