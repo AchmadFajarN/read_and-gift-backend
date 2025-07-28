@@ -15,7 +15,7 @@ class UploadImageProfileHandler {
         const { filename: meta } = image.hapi;
         const fileName = `${+new Date()}-${meta}`;
         const baseUrl = process.env.BASE_URL;
-        const pathUrl = `${baseUrl}profile/${fileName}`;
+        const pathUrl = `${baseUrl}/profile/${fileName}`;
         console.log(pathUrl)
 
         await this._imageProfileService.uploadImageProfile(id, pathUrl);
