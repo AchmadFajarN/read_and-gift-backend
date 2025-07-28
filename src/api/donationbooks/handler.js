@@ -32,10 +32,10 @@ class DonationBooksHandler {
       const filename = `donation_book-${bookId}${extension}`;
 
       await this._donationStorageService.writeFile(payload.cover, filename, 'donationCovers');
-
+      const baseUrl = process.env.BASE_URL;
       await this._coverPathDonationsService.addCoverPath(
         bookId,
-        `http://${process.env.HOST}:${process.env.PORT}/donation/cover/${filename}`
+        `https://${baseUrl}/donation/cover/${filename}`
       );
     }
 

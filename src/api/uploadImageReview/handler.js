@@ -14,8 +14,8 @@ class uploadImageReviewHandler {
         this._validator.validateImageHeader(image.hapi.headers);
         const { filename: meta } = image.hapi;
         const fileName = `${+new Date()}-${meta}`;
-
-        const pathUrl = `http://${process.env.HOST}:${process.env.PORT}/review/img/${fileName}`
+        const baseUrl = process.env.BASE_URL;
+        const pathUrl = `${baseUrl}/review/img/${fileName}`;
 
         await this._imageReviewService.uploadImageReview(id, pathUrl);
         await this._storageService.writeFile(image, fileName);

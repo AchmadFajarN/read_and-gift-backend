@@ -14,8 +14,8 @@ class UploadImageProfileHandler {
         this._validator.validateImageHeader(image.hapi.headers);
         const { filename: meta } = image.hapi;
         const fileName = `${+new Date()}-${meta}`;
-    
-        const pathUrl = `http://${process.env.HOST}:${process.env.PORT}/profile/${fileName}`;  
+        const baseUrl = process.env.BASE_URL;
+        const pathUrl = `${baseUrl}/profile/${fileName}`;
 
         await this._imageProfileService.uploadImageProfile(id, pathUrl);
         await this._storageService.writeFile(image, fileName);
