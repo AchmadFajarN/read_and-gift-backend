@@ -73,7 +73,7 @@ const init = async() => {
         host: process.env.HOST || 'localhost',
         routes: {
             cors: {
-                origin: ['http://localhost:5173'],
+                origin: [process.env.FE_URL],
                 credentials: true,
             }
         }
