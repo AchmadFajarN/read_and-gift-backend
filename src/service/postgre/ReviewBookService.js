@@ -93,12 +93,23 @@ class ReviewBookService {
         return {
           ...review,
           likes: likes.length,
-          comments: comments.length, 
+          comments: comments.length,
         };
       })
     );
 
-    return reviewsWithExtras;
+    // total books
+    const countQuery = await this._pool.query('SELECT COUNT(*) FROM review_books');
+    const totalItems = parseInt(countQuery.rows[0].count, 10);
+    const totalPages = Math.ceil(totalItems / limit);
+
+    return {
+      reviewsWithExtras,
+      page,
+      limit,
+      totalItems,
+      totalPages,
+    };
   }
 
   async getReviewById(id) {

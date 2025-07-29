@@ -10,7 +10,7 @@ const routes = (handler) => [
                 allow: 'multipart/form-data',
                 multipart: true,
                 output: 'stream',
-                maxBytes: 512000
+                maxBytes: 2000000
             }
         }
     },
@@ -23,6 +23,6 @@ const routes = (handler) => [
             }
         }
     }
-]
+];
 
 module.exports = routes;
