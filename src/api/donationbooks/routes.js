@@ -12,7 +12,7 @@ const routes = (handler) => [
         multipart: true,
         output: 'stream',
         parse: true,
-        maxBytes: 512 * 1024, //TODO: Limitnya berapa?
+        maxBytes: 2000000, //TODO: Limitnya berapa?
       },
     },
   },
@@ -41,7 +41,7 @@ const routes = (handler) => [
     handler: handler.putDonationBookByIdHandler,
     options: {
       auth: 'read_and_gift_jwt',
-            payload: {
+      payload: {
         allow: 'multipart/form-data',
         multipart: true,
         output: 'stream',

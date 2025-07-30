@@ -44,7 +44,7 @@ const imageReview = require('./api/uploadImageReview');
 const ImageReviewService = require('./service/postgre/ImageReviewService');
 
 // like review
-const like_review = require('./api/likeReview')
+const like_review = require('./api/likeReview');
 const LikeReviewService = require('./service/postgre/LikeReviewService');
 
 // comment
@@ -53,7 +53,7 @@ const commentValidator = require('./validator/commentReview');
 const CommentReviewService = require('./service/postgre/CommentReviewService');
 
 
-const init = async() => {
+const init = async () => {
     const userService = new UserService();
     const imageProfileService = new ImageProfileService();
     const donationBooksService = new DonationBooksService();
@@ -64,7 +64,7 @@ const init = async() => {
     const imageReviewService = new ImageReviewService();
     const reviewStorage = new StorageService(path.resolve(__dirname, 'api/uploadImageReview/images'));
     const likeService = new LikeReviewService();
-    const commentService = new CommentReviewService()
+    const commentService = new CommentReviewService();
     const reviewService = new ReviewBookService(likeService, commentService);
     const recipientDonationsService = new RecipientDonationsService();
 
@@ -73,7 +73,7 @@ const init = async() => {
         host: process.env.HOST || 'localhost',
         routes: {
             cors: {
-                origin: ['https://read-and-gift.netlify.app'],
+                origin: ['http://localhost:5173'],
                 credentials: true,
             }
         }
@@ -97,15 +97,15 @@ const init = async() => {
             maxAgeSec: process.env.ACCESS_TOKEN_AGE
         },
         validate: (artifacts) => {
-            return{
+            return {
                 isValid: true,
                 credentials: {
                     id: artifacts.decoded.payload.id,
-                    role: artifacts.decoded.payload.role 
+                    role: artifacts.decoded.payload.role
                 }
-            }
+            };
         }
-    })
+    });
 
     await server.register([
         {
@@ -180,37 +180,37 @@ const init = async() => {
         }
     ]);
 
-  server.ext('onPreResponse', (request, h) => {
-    const { response } = request;
+    server.ext('onPreResponse', (request, h) => {
+        const { response } = request;
 
-    if (response instanceof Error) {
-      if (response instanceof ClientError) {
-        const newResponse = h.response({
-          status: 'fail',
-          message: response.message,
-        });
-        newResponse.code(response.statusCode);
-        return newResponse;
-      }
+        if (response instanceof Error) {
+            if (response instanceof ClientError) {
+                const newResponse = h.response({
+                    status: 'fail',
+                    message: response.message,
+                });
+                newResponse.code(response.statusCode);
+                return newResponse;
+            }
 
-      if (!response.isServer) {
+            if (!response.isServer) {
+                return h.continue;
+            }
+
+            const newResponse = h.response({
+                status: 'error',
+                message: 'Maaf, terjadi kegagalan pada server kami.',
+            });
+            newResponse.code(500);
+            console.error(response);
+            return newResponse;
+        }
+
         return h.continue;
-      }
-
-      const newResponse = h.response({
-        status: 'error',
-        message: 'Maaf, terjadi kegagalan pada server kami.',
-      });
-      newResponse.code(500);
-      console.error(response);
-      return newResponse;
-    }
-
-    return h.continue;
-  });
+    });
 
     await server.start();
     console.log("server berjalan di", server.info.uri);
-}
+};
 
 init();

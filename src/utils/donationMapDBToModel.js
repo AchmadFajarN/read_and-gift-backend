@@ -8,6 +8,7 @@ const mapDBToModel = ({
   genre,
   book_condition,
   donation_image_path,
+  owner
 }) => ({
   id,
   title,
@@ -18,6 +19,7 @@ const mapDBToModel = ({
   genre,
   bookCondition: book_condition,
   donationCoverPath: donation_image_path,
+  owner,
 });
 
 
