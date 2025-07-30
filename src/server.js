@@ -73,7 +73,7 @@ const init = async () => {
         host: process.env.HOST || 'localhost',
         routes: {
             cors: {
-                origin: ['http://localhost:5173'],
+                origin: ['https://read-and-gift-frontend.vercel.app/'],
                 credentials: true,
             }
         }

@@ -14,7 +14,7 @@ class UploadImageProfileHandler {
         this._validator.validateImageHeader(image.hapi.headers);
         const { filename: meta } = image.hapi;
         const fileName = `${+new Date()}-${meta}`;
-        const baseUrl = process.env.BASE_URL;
+        const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
         const pathUrl = `${baseUrl}/profile/${fileName}`;
         console.log(pathUrl)
 
