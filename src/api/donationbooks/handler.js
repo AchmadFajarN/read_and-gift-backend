@@ -35,7 +35,7 @@ class DonationBooksHandler {
       const baseUrl = process.env.BASE_URL || 'http://localhost:5000';
       await this._coverPathDonationsService.addCoverPath(
         bookId,
-        `https://${baseUrl}/donation/cover/${filename}`
+        `${baseUrl}/donation/cover/${filename}`
       );
     }
 
